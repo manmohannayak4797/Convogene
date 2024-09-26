@@ -1,0 +1,23 @@
+.loginContainer {
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: row;
+    width: 45%;
+    margin-bottom: 1rem;
+}
+.loginContainer:hover {
+    background-color: lightgray;
+}
+.login {
+   
+        background-color: #3B82F6 !important  ;
+        opacity: 0.8;
+        width: 45%;
+        margin-top: 0rem;
+        margin-bottom: 1rem;
+    
+}
+.login:hover {
+    background-color: #3B82F6;
+    opacity: 0.5;
+}

@@ -1,0 +1,42 @@
+.videoPlayer{
+    /* height: 300px !important; */
+    width: 100% !important;
+}
+
+.signin {
+    display: flex;
+    justify-content: center;
+    background-color: #3B82F6 !important;
+    align-items: center;
+    border: 2px solid;
+    border-radius: 20;
+    width: 100px;
+    height: 40px;
+    padding: 10px;
+}
+
+.signin:hover {
+    background-color: blue;
+}
+.promptCustom {
+    width: 45%;
+    border: 0.5px solid #ccc;
+    height: 40%;
+    background-color: #e8e8e82b;
+    border-radius:10px;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;  
+    font-size: 12px;
+    text-align: center;
+    justify-content: center;
+    align-items: center; display: flex; flex-direction: column;
+    padding: 1rem;
+  }
+  .title {
+    font-weight: bold;
+    height: 10%;
+    /* padding-top: 10px; */
+  }
+  .subtext {
+    padding-left: .25rem;
+    padding-right: .25rem;
+  }

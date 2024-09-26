@@ -1,0 +1,13 @@
+.signup {
+    background-color: #3B82F6 !important;
+    opacity: 0.8;
+    width: 45%;
+    margin-top: 0rem;
+    margin-bottom: 1rem;
+  }
+  
+.signup:hover {
+    background-color: #3B82F6;
+    opacity: 0.5;
+  }
+  

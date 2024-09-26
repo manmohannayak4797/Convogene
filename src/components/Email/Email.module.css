@@ -1,0 +1,85 @@
+.email-composer {
+    width: 600px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+  }
+  
+  .email-header {
+    background-color: #f2f2f2;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .header-actions button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-left: 5px;
+  }
+  
+  .email-form {
+    padding: 10px;
+  }
+  
+  .form-row {
+    display: flex;
+    margin-bottom: 10px;
+  }
+  
+  .form-row label {
+    width: 60px;
+  }
+  
+  .form-row input {
+    flex-grow: 1;
+  }
+  
+  .cc-bcc {
+    margin-left: 10px;
+  }
+  
+  .email-body {
+    width: 100%;
+    height: 200px;
+    resize: none;
+  }
+  
+  .email-footer {
+    background-color: #f2f2f2;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .send-button {
+    background-color: #0078d4;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .action-buttons button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-left: 5px;
+  }
+  
+  .activate-windows, .go-to-settings {
+    color: #888;
+    font-size: 12px;
+    margin-left: 10px;
+  }
+  
+  .delete-button {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }

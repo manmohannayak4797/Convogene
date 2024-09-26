@@ -1,0 +1,74 @@
+.modalContent {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    margin: auto;
+    min-width: 40%;
+  }
+  .uploadedFilesCount {
+    margin-top: 10px;
+    margin-bottom: 2px;
+  }
+  
+  .fileItem {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 2px solid #ccc;
+    padding: 2px;
+    margin-bottom: 5px;
+    background-color: #FAF9F6;
+  }
+  
+  .fileItemContent {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .fileInfo {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .pdfIcon {
+    width: 50%;
+    height: 32px;
+    margin-right: 10px;
+  }
+  
+  .fileActions {
+    display: flex;
+    flex-direction: row;
+  }
+  
+  .actionIcon {
+    cursor: pointer;
+    margin-left: 10px;
+  }
+
+  .file-upload-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f9f9f9;
+  }
+  
+  .fileuploadbox {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .file-upload-label {
+    display: block;
+    margin-bottom: 10px;
+    cursor: pointer;
+    color: #555;
+  }
