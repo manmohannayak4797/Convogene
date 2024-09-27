@@ -9,7 +9,8 @@ import ProtectedRoute from '../src/pages/Login/ProtectedRoute';
 import SignUp from "./pages/SignUp/SignUp";
 import Monitor from "./pages/Monitor/Monitor";
 import Jira from "./pages/Jira/Jira";
-import TranscriptionApp from "./pages/Transcription/TranscriptionApp";
+// import TranscriptionApp from "./pages/Transcription/TranscriptionApp";
+
 
 const Router = () => {
 
@@ -51,14 +52,15 @@ const Router = () => {
             path: "jira",
             element: <Jira />,
           },
+          
           {
             path: "SignUp",
             element: <SignUp />,
           },
-          {
-            path: "TranscriptionApp",
-            element: <TranscriptionApp />,
-          },
+          // {
+          //   path: "TranscriptionApp",
+          //   element: <TranscriptionApp />,
+          // },
         ],
       },
     ]);

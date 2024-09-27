@@ -6,7 +6,6 @@ import EmailComposer from "../../components/Email/Email";
 import DeleteConformDialog from "./DeleteConformDialog";
 import { Switch } from "@mui/material";
 
-
 import {
   IconButton,
   Drawer,
@@ -214,7 +213,7 @@ const Home = () => {
     setIsCollapse2(!isCollapse2);
   };
   const handleCollapse3 = async () => {
-    const response = await axios.get("http://127.0.0.1:5000/index_list");
+    const response = await axios.get("http://192.168.0.182:8080/index_list");
     console.log(response.data);
     setIndexes(response.data);
     setIsCollapse3(!isCollapse3);
@@ -222,6 +221,7 @@ const Home = () => {
 
   const handleCollapse5 = async () => {
     const response = await axios.get("http://192.168.0.182:8080/list_files");
+    // const response = await axios.get("http://127.0.0.1:5000/list_files");
     console.log(response.data);
     setFiles(response.data);
     setIsCollapse5(!isCollapse5);
@@ -244,7 +244,8 @@ const Home = () => {
     setMessages([]);
     console.log("get_file_single");
     console.log("this is file name" + event.target.value);
-    const response = await axios.post("http://127.0.0.1:5000/one_file", {
+    // const response = await axios.post("http://127.0.0.1:5000/one_file", {
+    const response = await axios.post("http://192.168.0.182:8080/one_file", {
       file: event.target.value,
     });
     console.log(typeof response);
@@ -256,7 +257,7 @@ const Home = () => {
 
   const get_file_mail = async (fileName) => {
     const fileResponse = await axios.post(
-      "http://127.0.0.1:5000/one_file_mail",
+      "http://192.168.0.182:8080/one_file_mail",
       { file: fileName },
       { responseType: "blob" } // Important: This tells axios to treat the response as binary data
     );
@@ -267,14 +268,11 @@ const Home = () => {
     setAttachment(file);
   };
 
-  
-
   useEffect(() => {
     if (messages) {
       console.log(messages);
     }
   }, [messages]);
-
 
   let synthesizer = null;
   const volumeup = (text) => {
@@ -309,8 +307,6 @@ const Home = () => {
     }
   };
 
-
-
   useEffect(() => {
     const audioConfig = sdk.AudioConfig.fromDefaultMicrophoneInput();
     const speechConfig = sdk.SpeechConfig.fromSubscription(
@@ -337,14 +333,14 @@ const Home = () => {
     const corrections = {
       "AMD Epic": "AMD EPYC",
       "AMD risen": "AMD RYZEN",
-      "processes": "processors",
-      "epic": "EPYC",
-      "risen": "RYZEN",
-      "horizon": "RYZEN",
+      processes: "processors",
+      epic: "EPYC",
+      risen: "RYZEN",
+      horizon: "RYZEN",
       "rise and": "RYZEN",
-      "amd": "AMD",
-      "MD": "AMD",
-      "MDA": "AMD", 
+      amd: "AMD",
+      MD: "AMD",
+      MDA: "AMD",
     };
 
     return text
@@ -367,29 +363,32 @@ const Home = () => {
         }
       );
 
- let previousWords = [];
- let currentSearchValue = "";
+      let previousWords = [];
+      let currentSearchValue = "";
 
- recognizer.recognizing = (s, e) => {
-   if (e.result.reason === sdk.ResultReason.RecognizingSpeech) {
-     const currentWords = e.result.text.split(" ");
-     const newWords = currentWords.filter(
-       (word) => !previousWords.includes(word)
-     );
+      recognizer.recognizing = (s, e) => {
+        if (e.result.reason === sdk.ResultReason.RecognizingSpeech) {
+          const currentWords = e.result.text.split(" ");
+          const newWords = currentWords.filter(
+            (word) => !previousWords.includes(word)
+          );
 
-     if (newWords.length > 0) {
-       const interimText = correctSpecialWords(newWords.join(" "));
-       currentSearchValue = (currentSearchValue + " " + interimText).trim();
+          if (newWords.length > 0) {
+            const interimText = correctSpecialWords(newWords.join(" "));
+            currentSearchValue = (
+              currentSearchValue +
+              " " +
+              interimText
+            ).trim();
 
-       console.log("New words:", interimText);
-       console.log("Updated Search Value:", currentSearchValue);
+            console.log("New words:", interimText);
+            console.log("Updated Search Value:", currentSearchValue);
 
-       setSearchValue(currentSearchValue);
-       previousWords = currentWords;
-     }
-   }
- };
-
+            setSearchValue(currentSearchValue);
+            previousWords = currentWords;
+          }
+        }
+      };
     }
   };
 
@@ -468,11 +467,12 @@ const Home = () => {
       const response = await axios.post(
         "http://127.0.0.1:5000/create_pinecone_index",
         {
-       index_name: indexref.current.value,
-        embedding_model: embeddingRef.current.value,
-        dimension: Number(dimensionsRef.current.value),
-        metrics: metricRef.current.value,
-      });
+          index_name: indexref.current.value,
+          embedding_model: embeddingRef.current.value,
+          dimension: Number(dimensionsRef.current.value),
+          metrics: metricRef.current.value,
+        }
+      );
       console.log(response);
       alert("Created");
       setIndex(false);
@@ -660,7 +660,7 @@ const Home = () => {
 
   const getAnswer = async () => {
     const query = searchValue;
-    setSearchValue(""); 
+    setSearchValue("");
     const userMessage = { answer: searchValue, sender: "user" };
     const botMessage = { sender: "bot", display: 0, answer: "" };
     setMessages([...messages, userMessage, botMessage]);
@@ -669,6 +669,7 @@ const Home = () => {
     if (searchValue) {
       try {
         const response = await fetch(
+          //  " http://172.17.46.186:8081/rag_qa_api_stream",
           // "http://127.0.0.1:5000/rag_qa_api_stream",
           "http://192.168.0.182:8080/rag_qa_api_stream",
           // "http://172.28.193.17:8080/rag_qa_api_stream",
@@ -752,7 +753,7 @@ const Home = () => {
   const handleChangeModel = (event) => {
     console.log("model", event.target.value);
     setSelectedModel(event.target.value);
-    navigate("/jira");
+    navigate("/jira_temp");
     // if (event.target.value === "compare") {
     //   setWidthM("33%");
     // } else {
@@ -2087,7 +2088,9 @@ const Home = () => {
                   }}
                 />
               }
-              label={useChromaDB ? "Store in Pinecone DB" : "Store in Chroma DB"}
+              label={
+                useChromaDB ? "Store in Pinecone DB" : "Store in Chroma DB"
+              }
             />
             <div style={{ display: "flex", justifyContent: "center" }}>
               <Button

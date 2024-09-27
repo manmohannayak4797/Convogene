@@ -36,13 +36,14 @@ import cohereimg from "../../assets/Images/images.png";
 import openaiimg from "../../assets/Images/openai-logo-0.png";
 import styles from "./Jira.module.css";
 import Menu from "@mui/material/Menu";
-
+// import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import MenuItem from "@mui/material/MenuItem";
 // import DeleteIcon from '@mui/icons-material/Delete';
 import LegendToggleIcon from "@mui/icons-material/LegendToggle";
 import { useAuth } from "../Login/AuthContext";
 import PopupState, { bindTrigger, bindMenu } from "material-ui-popup-state";
-
+import ParseContent from "./ParseContent";
 const VisuallyHiddenInput = styled("input")({
   clip: "rect(0 0 0 0)",
   clipPath: "inset(50%)",
@@ -364,7 +365,7 @@ const Jira = () => {
                     </ListItemButton>
                   </ListItem>
                   <ListItem disablePadding>
-                    <ListItemButton onClick={() => navigate("/Home")}>  
+                    <ListItemButton onClick={() => navigate("/Home")}>
                       <ListItemIcon style={{ minWidth: "20px" }}>
                         <HubIcon />
                       </ListItemIcon>
@@ -588,14 +589,19 @@ const Jira = () => {
                                   className={styles.robotmessageContainer}
                                   style={{
                                     width:
-                                      message.display !== 0 ? "100%" : "100%",
+                                      message.display !== 0 ? "10%" : "100%",
                                   }}
                                 >
                                   <img
                                     src={cohereimg}
                                     style={{ width: "50px" }}
                                   />
-                                  <Markdown>{message.answer}</Markdown>
+                                  {/* <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {message.answer}
+                                  </ReactMarkdown> */}
+                                  {/* <Markdown>{message.answer}</Markdown> */}
+                                  {/* <ParseContent text={message.answer} /> */}
+                                  {message.answer}
                                 </div>
                               )}
                             {message?.answer1 &&
