@@ -164,6 +164,7 @@ const Home = () => {
   const [useChromaDB, setUseChromaDB] = useState(false);
   const [rag_answer, setRagAnswer] = useState("");
   const today = new Date();
+  const [isCollapseTempChat, setIsCollapseTempChat] = useState(false);
   const date_for_file = today.toISOString().split("T")[0];
 
   console.log(typeof date_for_file);
@@ -213,14 +214,14 @@ const Home = () => {
     setIsCollapse2(!isCollapse2);
   };
   const handleCollapse3 = async () => {
-    const response = await axios.get("http://192.168.0.182:8080/index_list");
+    const response = await axios.get("http://192.168.0.182:8081/index_list");
     console.log(response.data);
     setIndexes(response.data);
     setIsCollapse3(!isCollapse3);
   };
 
   const handleCollapse5 = async () => {
-    const response = await axios.get("http://192.168.0.182:8080/list_files");
+    const response = await axios.get("http://192.168.0.182:8081/list_files");
     // const response = await axios.get("http://127.0.0.1:5000/list_files");
     console.log(response.data);
     setFiles(response.data);
@@ -245,7 +246,7 @@ const Home = () => {
     console.log("get_file_single");
     console.log("this is file name" + event.target.value);
     // const response = await axios.post("http://127.0.0.1:5000/one_file", {
-    const response = await axios.post("http://192.168.0.182:8080/one_file", {
+    const response = await axios.post("http://192.168.0.182:8081/one_file", {
       file: event.target.value,
     });
     console.log(typeof response);
@@ -257,7 +258,7 @@ const Home = () => {
 
   const get_file_mail = async (fileName) => {
     const fileResponse = await axios.post(
-      "http://192.168.0.182:8080/one_file_mail",
+      "http://192.168.0.182:8081/one_file_mail",
       { file: fileName },
       { responseType: "blob" } // Important: This tells axios to treat the response as binary data
     );
@@ -328,24 +329,31 @@ const Home = () => {
     };
   }, []);
 
-  // Function to correct special words
   const correctSpecialWords = (text) => {
-    const corrections = {
-      "AMD Epic": "AMD EPYC",
-      "AMD risen": "AMD RYZEN",
-      processes: "processors",
-      epic: "EPYC",
-      risen: "RYZEN",
-      horizon: "RYZEN",
-      "rise and": "RYZEN",
-      amd: "AMD",
-      MD: "AMD",
-      MDA: "AMD",
-    };
-
     return text
       .split(" ")
-      .map((word) => corrections[word.toLowerCase()] || word)
+      .map((word) => {
+        switch (word.toLowerCase()) {
+          case "amd epic":
+            return "AMD EPYC";
+          case "amd risen":
+            return "AMD RYZEN";
+          case "processes":
+            return "processors";
+          case "epic":
+            return "EPYC";
+          case "risen":
+          case "horizon":
+          case "rise and":
+            return "RYZEN";
+          case "amd":
+          case "md":
+          case "mda":
+            return "AMD";
+          default:
+            return word;
+        }
+      })
       .join(" ");
   };
 
@@ -420,7 +428,7 @@ const Home = () => {
       formData.append("file", file);
       try {
         const response = await axios.post(
-          " http://127.0.0.1:5000/upload_doc",
+          " http://192.168.0.182:8081/upload_doc",
           formData,
           {
             headers: {
@@ -671,8 +679,8 @@ const Home = () => {
         const response = await fetch(
           //  " http://172.17.46.186:8081/rag_qa_api_stream",
           // "http://127.0.0.1:5000/rag_qa_api_stream",
-          "http://192.168.0.182:8080/rag_qa_api_stream",
-          // "http://172.28.193.17:8080/rag_qa_api_stream",
+          "http://192.168.0.182:8081/rag_qa_api_stream",
+          // "http://172.28.193.17:8081/rag_qa_api_stream",
 
           {
             method: "POST",
@@ -710,12 +718,9 @@ const Home = () => {
 
   const linksend = async () => {
     try {
-      const endpoint = useChromaDB
-        ? "/web_scrape_chroma"
-        : "/web_scrape_pinecone";
-      const response = await axios.post(`http://127.0.0.1:5000${endpoint}`, {
-        link: linkref.current.value,
-        maxDepth: depthRef.current.value,
+      const response = await axios.post(`http://192.168.0.182:8081/scrape`, {
+        url: linkref.current.value,
+        max_depth: depthRef.current.value,
         // user: profile.given_name + "_" + profile.family_name,
       });
       console.log(response.data); // Log the response data
@@ -730,7 +735,17 @@ const Home = () => {
     setIsCustom(false);
     setLlm_endpoint(llm_endpoint_ref.current.value);
   };
+  const handleSaveToPinecone = async () => {
+    // Assume save logic here; replace with your actual save functionality
+    const saveSuccessful = true; // Simulate successful save
 
+    if (saveSuccessful) {
+      navigate("/jira"); // Navigate to Jira on successful save
+    } else {
+      // Handle the case if saving fails
+      console.error("Failed to save to Pinecone.");
+    }
+  };
   useEffect(() => {
     const handleKeyPress = (event) => {
       if (event.key === "Enter") {
@@ -749,11 +764,14 @@ const Home = () => {
       }
     };
   });
+  const handleCollapseTempChat = () => {
+    setIsCollapseTempChat(!isCollapseTempChat);
+  };
 
-  const handleChangeModel = (event) => {
+  const handleCopilotClick = (event) => {
     console.log("model", event.target.value);
     setSelectedModel(event.target.value);
-    navigate("/jira_temp");
+    navigate("/jira");
     // if (event.target.value === "compare") {
     //   setWidthM("33%");
     // } else {
@@ -903,7 +921,7 @@ const Home = () => {
                       <ListItemText primary="Monitoring" />
                     </ListItemButton>
                   </ListItem>
-                  <ListItem disablePadding sx={{ marginBottom: "8px" }}>
+                  {/* <ListItem disablePadding sx={{ marginBottom: "8px" }}>
                     <ListItemButton
                       sx={{
                         "&:hover": {
@@ -925,7 +943,7 @@ const Home = () => {
                       </ListItemIcon>
                       <ListItemText primary="Create Index" />
                     </ListItemButton>
-                  </ListItem>
+                  </ListItem> */}
                 </List>
                 <Divider />
                 <List>
@@ -960,9 +978,11 @@ const Home = () => {
                       {isCollapse0 ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                     </ListItemButton>
                   </ListItem>
+
                   <Collapse in={isCollapse0} timeout="auto" unmountOnExit>
                     <Box sx={{ pl: 4 }}>
                       <List>
+                        {/* Web Scraping Option */}
                         <ListItem disablePadding sx={{ marginBottom: "8px" }}>
                           <ListItemButton
                             sx={{
@@ -974,7 +994,7 @@ const Home = () => {
                                   ? "#CDF5FD"
                                   : "transparent",
                             }}
-                            onClick={() => setLink(true)}
+                            onClick={() => setLink(true)} // Link to Web Scraping functionality
                           >
                             <ListItemIcon
                               style={{ minWidth: "20px", marginRight: "8px" }}
@@ -986,6 +1006,8 @@ const Home = () => {
                             <ListItemText primary="Web Scraping" />
                           </ListItemButton>
                         </ListItem>
+
+                        {/* Upload Doc Option */}
                         <ListItem disablePadding sx={{ marginBottom: "8px" }}>
                           <ListItemButton
                             sx={{
@@ -998,9 +1020,8 @@ const Home = () => {
                                   : "transparent",
                             }}
                             onClick={() => {
-                              // getList();
                               setSelectedFile(undefined);
-                              setDocument(true);
+                              setDocument(true); // Functionality to handle file upload
                             }}
                           >
                             <ListItemIcon
@@ -1010,9 +1031,65 @@ const Home = () => {
                                 sx={{ fontSize: 20, color: "#00A9FF" }}
                               />
                             </ListItemIcon>
-                            <ListItemText primary="Upload/Remove Doc" />
+                            <ListItemText primary="Upload your Doc" />
                           </ListItemButton>
                         </ListItem>
+
+                        {/* Chat with Temporary Data */}
+                        <ListItem disablePadding sx={{ marginBottom: "8px" }}>
+                          <ListItemButton
+                            sx={{
+                              "&:hover": {
+                                backgroundColor: "#CDF5FD",
+                              },
+                              backgroundColor:
+                                selectedItem === "temp_chat"
+                                  ? "#CDF5FD"
+                                  : "transparent",
+                            }}
+                            onClick={() => {
+                              navigate("/Chat_temporary"); // Navigate to Jira
+                              setSelectedItem("temp_chat");
+                            }}
+                          >
+                            <ListItemIcon
+                              style={{ minWidth: "20px", marginRight: "8px" }}
+                            >
+                              <ScreenSearchDesktopIcon
+                                sx={{ fontSize: 20, color: "#00A9FF" }}
+                              />
+                            </ListItemIcon>
+                            <ListItemText primary="Chat with your Data" />
+                          </ListItemButton>
+                        </ListItem>
+
+                        {/* Chat with Permanent Data */}
+                        {/* <ListItem disablePadding sx={{ marginBottom: "8px" }}>
+                          <ListItemButton
+                            sx={{
+                              "&:hover": {
+                                backgroundColor: "#CDF5FD",
+                              },
+                              backgroundColor:
+                                selectedItem === "perm_chat"
+                                  ? "#CDF5FD"
+                                  : "transparent",
+                            }}
+                            onClick={() => {
+                              navigate("/jira"); // Navigate to Jira
+                              setSelectedItem("perm_chat");
+                            }}
+                          >
+                            <ListItemIcon
+                              style={{ minWidth: "20px", marginRight: "8px" }}
+                            >
+                              <ScreenSearchDesktopIcon
+                                sx={{ fontSize: 20, color: "#00A9FF" }}
+                              />
+                            </ListItemIcon>
+                            <ListItemText primary="Chat with Permanent Data" />
+                          </ListItemButton>
+                        </ListItem> */}
                       </List>
                     </Box>
                   </Collapse>
@@ -1100,7 +1177,7 @@ const Home = () => {
                       </FormControl>
                     </Box>
                   </Collapse> */}
-                  <ListItem
+                  {/* <ListItem
                     disablePadding
                     onClick={handleCollapse2}
                     sx={{ marginBottom: "8px" }}
@@ -1177,8 +1254,30 @@ const Home = () => {
                         </RadioGroup>
                       </FormControl>
                     </Box>
-                  </Collapse>
-                  <ListItem
+                  </Collapse> */}
+                  <ListItem disablePadding sx={{ marginBottom: "8px" }}>
+                    <ListItemButton
+                      sx={{
+                        "&:hover": {
+                          backgroundColor: "#CDF5FD",
+                        },
+                        // Keep this style if you want a selected effect
+                        backgroundColor: "transparent",
+                      }}
+                      onClick={handleCopilotClick} // Call your handler on click
+                    >
+                      <ListItemIcon
+                        style={{ minWidth: "20px", marginRight: "8px" }}
+                      >
+                        <WidgetsOutlinedIcon
+                          sx={{ fontSize: 20, color: "#00A9FF" }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText primary="Copilot" />
+                      {/* Optionally include Expand icons if needed */}
+                    </ListItemButton>
+                  </ListItem>
+                  {/* <ListItem
                     disablePadding
                     onClick={() => handleCollapse3}
                     sx={{ marginBottom: "8px" }}
@@ -1256,8 +1355,7 @@ const Home = () => {
                         </RadioGroup>
                       </FormControl>
                     </Box>
-                  </Collapse>
-
+                  </Collapse> */}
                   {/* <ListItem
                     disablePadding
                     onClick={handleCollapse4}
@@ -1352,7 +1450,6 @@ const Home = () => {
                       </div>
                     </Box>
                   </Collapse> */}
-
                   <ListItem
                     disablePadding
                     onClick={() => handleCollapse5}
@@ -1384,7 +1481,6 @@ const Home = () => {
                       {isCollapse5 ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                     </ListItemButton>
                   </ListItem>
-
                   <Collapse in={isCollapse5} timeout="auto" unmountOnExit>
                     <Box sx={{ pl: 4 }}>
                       <FormControl component="fieldset">
@@ -2061,37 +2157,7 @@ const Home = () => {
               size="small"
               inputRef={depthRef}
             ></TextField>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={useChromaDB}
-                  onChange={(e) => setUseChromaDB(e.target.checked)}
-                  sx={{
-                    "& .MuiSwitch-switchBase.Mui-checked": {
-                      color: "#1976d2", // Blue color when checked (Pinecone DB)
-                      "&:hover": {
-                        backgroundColor: "#1976d230",
-                      },
-                    },
-                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                      backgroundColor: "#1976d2", // Blue track color when checked
-                    },
-                    "& .MuiSwitch-switchBase": {
-                      color: "#808080", // Gray color when unchecked (Chroma DB)
-                      "&:hover": {
-                        backgroundColor: "#80808030",
-                      },
-                    },
-                    "& .MuiSwitch-track": {
-                      backgroundColor: "#808080", // Gray track color when unchecked
-                    },
-                  }}
-                />
-              }
-              label={
-                useChromaDB ? "Store in Pinecone DB" : "Store in Chroma DB"
-              }
-            />
+
             <div style={{ display: "flex", justifyContent: "center" }}>
               <Button
                 variant="contained"

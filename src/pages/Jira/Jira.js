@@ -31,6 +31,7 @@ import io from "socket.io-client";
 import Markdown from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import gfm from "remark-gfm";
+import he from "he";
 import infobellImg from "../../assets/Images/infobellLogo.png";
 import cohereimg from "../../assets/Images/images.png";
 import openaiimg from "../../assets/Images/openai-logo-0.png";
@@ -43,7 +44,7 @@ import MenuItem from "@mui/material/MenuItem";
 import LegendToggleIcon from "@mui/icons-material/LegendToggle";
 import { useAuth } from "../Login/AuthContext";
 import PopupState, { bindTrigger, bindMenu } from "material-ui-popup-state";
-import ParseContent from "./ParseContent";
+import HtmlToText from "./HtmltoText";
 const VisuallyHiddenInput = styled("input")({
   clip: "rect(0 0 0 0)",
   clipPath: "inset(50%)",
@@ -99,7 +100,7 @@ const Jira = () => {
     "How do you create a new issue in JIRA",
     "How do you manage user access and permissions in ServiceNow",
     "Tell me about Employee's status on particular issue ",
-    "Which all projects are assigned to EmployeeName",
+    // "Which all projects are assigned to EmployeeName",
   ];
 
   const getRandomQueries = (arr, n) => {
@@ -249,7 +250,7 @@ const Jira = () => {
     if (searchValue) {
       setIsOpen(false);
       try {
-        const response = await fetch("http://127.0.0.1:5000/research", {
+        const response = await fetch("http://192.168.0.182:5000/research", {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -365,11 +366,11 @@ const Jira = () => {
                     </ListItemButton>
                   </ListItem>
                   <ListItem disablePadding>
-                    <ListItemButton onClick={() => navigate("/Home")}>
+                    <ListItemButton onClick={() => navigate("/jira")}>
                       <ListItemIcon style={{ minWidth: "20px" }}>
                         <HubIcon />
                       </ListItemIcon>
-                      <ListItemText primary="Connectors" />
+                      <ListItemText primary="Copilot" />
                     </ListItemButton>
                   </ListItem>
                   <ListItem disablePadding>
@@ -449,7 +450,8 @@ const Jira = () => {
           {isOpen ? (
             <div
               style={{
-                width: "50%",
+                width: "40%",
+                height: "100%",
                 display: "flex",
                 flexDirection: "row",
                 justifyContent: "space-around",
@@ -468,14 +470,15 @@ const Jira = () => {
                   style={{ fontSize: "70px", opacity: "0.8", color: "#3B82F6" }}
                 >
                   {" "}
-                  ConvoGene
+                  Copilot
                 </h1>
               </div>
 
               <div
                 style={{
-                  marginTop: "20%",
-                  height: "50%",
+                  // marginTop: "20%",
+                  width: "90%",
+                  height: "80%",
                   display: "flex",
                   flexDirection: "row",
                   flexWrap: "wrap",
@@ -589,19 +592,19 @@ const Jira = () => {
                                   className={styles.robotmessageContainer}
                                   style={{
                                     width:
-                                      message.display !== 0 ? "10%" : "100%",
+                                      message.display !== 0 ? "100%" : "100%",
                                   }}
                                 >
                                   <img
-                                    src={cohereimg}
+                                    src={openaiimg}
                                     style={{ width: "50px" }}
                                   />
                                   {/* <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                     {message.answer}
                                   </ReactMarkdown> */}
-                                  {/* <Markdown>{message.answer}</Markdown> */}
+                                  <Markdown>{message.answer}</Markdown>
                                   {/* <ParseContent text={message.answer} /> */}
-                                  {message.answer}
+                                  {/* <HtmlToText html={message.answer} /> */}
                                 </div>
                               )}
                             {message?.answer1 &&
