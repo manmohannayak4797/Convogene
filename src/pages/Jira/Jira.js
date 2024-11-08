@@ -17,9 +17,11 @@ import {
   Menu as MenuIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
+  ScreenSearchDesktop as ScreenSearchDesktopIcon,
   Hub as HubIcon,
   Send as SendIcon,
 } from "@mui/icons-material";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import {
   Dialog,
   DialogTitle,
@@ -32,6 +34,7 @@ import Markdown from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import gfm from "remark-gfm";
 import he from "he";
+import Tooltip from "@mui/material/Tooltip";
 import infobellImg from "../../assets/Images/infobellLogo.png";
 import cohereimg from "../../assets/Images/images.png";
 import openaiimg from "../../assets/Images/openai-logo-0.png";
@@ -45,6 +48,10 @@ import LegendToggleIcon from "@mui/icons-material/LegendToggle";
 import { useAuth } from "../Login/AuthContext";
 import PopupState, { bindTrigger, bindMenu } from "material-ui-popup-state";
 import HtmlToText from "./HtmltoText";
+import AssistantIcon from "@mui/icons-material/Assistant";
+import KeyboardVoiceIcon from "@mui/icons-material/KeyboardVoice";
+import QueryStatsIcon from "@mui/icons-material/QueryStats";
+
 const VisuallyHiddenInput = styled("input")({
   clip: "rect(0 0 0 0)",
   clipPath: "inset(50%)",
@@ -64,10 +71,21 @@ const socket2 = io("http://localhost:5000/research", {
   transports: ["websocket"],
 });
 
+const sdk = require("microsoft-cognitiveservices-speech-sdk");
+// const fs = require('fs').promises;
+const SPEECH_KEY = "f4a8f5be7801494fa47bc87d6d8ca31d";
+const SPEECH_REGION = "eastus";
+const speechConfig = sdk.SpeechConfig.fromSubscription(
+  SPEECH_KEY,
+  SPEECH_REGION
+);
+speechConfig.speechRecognitionLanguage = "en-US";
+speechConfig.speechSynthesisVoiceName = "en-US-AvaMultilingualNeural";
 //////////////////////////////
 
 const Jira = () => {
   const navigate = useNavigate();
+  const queryRef = useRef(null);
   const [isOpen, setIsOpen] = useState(true);
   const [searchValue, setSearchValue] = useState("");
   const [messages, setMessages] = useState([]);
@@ -85,7 +103,13 @@ const Jira = () => {
   let [answerFlag2, setAnswerFlag2] = useState(true);
   const { logoutUser } = useAuth();
   const [randomQueries, setRandomQueries] = useState([]);
-  const [newQuery, setNewQuery] = useState("");
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [recognizer, setRecognizer] = useState(null);
+  const [manuallyEdited, setManuallyEdited] = useState(false);
+  const [transcription, setTranscription] = useState("");
+  const [previousWords, setPreviousWords] = useState([]);
+  const [currentSearchValue, setCurrentSearchValue] = useState("");
 
   const handleLogout = async () => {
     try {
@@ -96,11 +120,32 @@ const Jira = () => {
     }
   };
 
+  // todo: Make a function to populate 3 values here and make them visible for second query onwords as well.
   const queries = [
-    "How do you create a new issue in JIRA",
-    "How do you manage user access and permissions in ServiceNow",
-    "Tell me about Employee's status on particular issue ",
-    // "Which all projects are assigned to EmployeeName",
+    "Find all bugs in the Adventurous Rider project",
+    "How many issues are in medium priority in project AR",
+    "Please provide details for the issue ar-4",
+    "How many closed issues are there across all projects?",
+    "Give me a list of closed issues of AR project in table form",
+    "What is the summary of issue AR-77?",
+    "Give me a list of closed issues of Praveenna Bharathi in general give in bullet points",
+    "How many closed issues are there in AR project?",
+    "Give me details on issue ar-77 in bullet points",
+    "Give me details of issues assigned to David Silva AR project",
+    "How many issues are in medium priority in project AR",
+  ];
+  // todo: Make a function to populate 3 values here and make them visible for second query onwords as well.
+  const servicenow_queries = [
+    "What incidents have a priority of 1?",
+    "What incidents are currently Open?",
+    "Which incident was opened by Lisa White?",
+    "List the incidents assigned to Balamurali Ommi?",
+    "list the incidents which are In progress?",
+    "Give the details of the incident related to VPN connection issue?",
+    "list the details of the incident related to keyword 'VPN' ?",
+    "What is the status of the 'Slow application response time' incident?",
+    "Show details of the incident reported by Emily Davis?",
+    "give the details of the incidents related to 'Network team'?",
   ];
 
   const getRandomQueries = (arr, n) => {
@@ -112,6 +157,66 @@ const Jira = () => {
     setRandomQueries(getRandomQueries(queries, 3));
   }, []);
 
+  useEffect(() => {
+    if (messages) {
+      console.log(messages);
+    }
+  }, [messages]);
+
+  let synthesizer = null;
+  const volumeup = (text) => {
+    if (isSpeaking) {
+      // Stop the current speech
+      if (synthesizer) {
+        synthesizer.close();
+        console.log("Speech stopped");
+      }
+      synthesizer = null;
+      setIsSpeaking(false);
+    } else {
+      // Start new speech
+      synthesizer = new sdk.SpeechSynthesizer(speechConfig);
+      setIsSpeaking(true);
+
+      synthesizer.speakTextAsync(
+        text,
+        (result) => {
+          if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
+            console.log("Synthesis finished.");
+          } else {
+            console.error(`Speech synthesis failed: ${result.reason}`);
+          }
+          setIsSpeaking(false);
+        },
+        (error) => {
+          console.error("Speech synthesis error:", error);
+          setIsSpeaking(false);
+        }
+      );
+    }
+  };
+
+  useEffect(() => {
+    const audioConfig = sdk.AudioConfig.fromDefaultMicrophoneInput();
+    const speechConfig = sdk.SpeechConfig.fromSubscription(
+      "f4a8f5be7801494fa47bc87d6d8ca31d", // Replace with your key
+      "eastus"
+    ); // Replace with your actual key and region
+
+    // Create the recognizer
+    const speechRecognizer = new sdk.SpeechRecognizer(
+      speechConfig,
+      audioConfig
+    );
+    setRecognizer(speechRecognizer);
+
+    return () => {
+      if (speechRecognizer) {
+        speechRecognizer.close();
+      }
+    };
+  }, []);
+
   const DrawerHeader = styled("div")(({ theme }) => ({
     display: "flex",
     alignItems: "center",
@@ -120,6 +225,147 @@ const Jira = () => {
     ...theme.mixins.toolbar,
     justifyContent: "flex-end",
   }));
+  const correctSpecialWords = (text) => {
+    return text
+      .split(" ")
+      .map((word) => {
+        switch (word.toLowerCase()) {
+          case "amd epic":
+            return "AMD EPYC";
+          case "amd risen":
+            return "AMD RYZEN";
+          case "processes":
+            return "processors";
+          case "epic":
+            return "EPYC";
+          case "risen":
+          case "horizon":
+          case "rise and":
+            return "RYZEN";
+          case "amd":
+          case "md":
+          case "mda":
+            return "AMD";
+          default:
+            return word;
+        }
+      })
+      .join(" ");
+  };
+  // const startListening = async () => {
+  //   if (recognizer) {
+  //     setIsListening(true);
+
+  //     recognizer.startContinuousRecognitionAsync(
+  //       () => {
+  //         console.log("Continuous recognition started");
+  //       },
+  //       (error) => {
+  //         console.error("Error starting continuous recognition:", error);
+  //         setIsListening(false);
+  //       }
+  //     );
+
+  //     let previousWords = [];
+  //     let currentSearchValue = "";
+
+  //     recognizer.recognizing = (s, e) => {
+  //       if (e.result.reason === sdk.ResultReason.RecognizingSpeech) {
+  //         const currentWords = e.result.text.split(" ");
+  //         const newWords = currentWords.filter(
+  //           (word) => !previousWords.includes(word)
+  //         );
+
+  //         if (newWords.length > 0) {
+  //           const interimText = correctSpecialWords(newWords.join(" "));
+  //           currentSearchValue = (
+  //             currentSearchValue +
+  //             " " +
+  //             interimText
+  //           ).trim();
+
+  //           console.log("New words:", interimText);
+  //           console.log("Updated Search Value:", currentSearchValue);
+
+  //           setSearchValue(currentSearchValue);
+  //           previousWords = currentWords;
+  //         }
+  //       }
+  //     };
+  //   }
+  // };
+
+  // const startListening=async()=>{
+  //   if(recognizer){
+  //     setIsListening(true)
+  //     recognizer.startContinuousRecognitionAsync(()=>{
+  //       console.log("Continuous Recognition started")
+  //     },
+  //   (error)=>{
+  //     console.error("Error starting continuous recognition", error);
+  //     setIsListening(false)
+  //   })
+  //   recognizer.recognizing=(s, e)=>{
+  //     if(e.result.reason === sdk.ResultReason.RecognizingSpeech){
+  //       const transcription =searchValue + e.result.text.split(" ");
+  //       setSearchValue(transcription)
+  //     }
+  //   }
+  //   }
+  // }
+  const startListening = async () => {
+    if (recognizer) {
+      setIsListening(true);
+
+      recognizer.startContinuousRecognitionAsync(
+        () => {
+          console.log("Continuous recognition started");
+        },
+        (error) => {
+          console.error("Error starting continuous recognition:", error);
+          setIsListening(false);
+        }
+      );
+
+      recognizer.recognizing = (s, e) => {
+        if (e.result.reason === sdk.ResultReason.RecognizingSpeech) {
+          const currentWords = e.result.text.split(" ");
+          const newWords = currentWords.filter(
+            (word) => !previousWords.includes(word)
+          );
+          setCurrentSearchValue(currentSearchValue + " " + newWords.join(" "));
+          setPreviousWords((prevWords) => [...prevWords, ...newWords]);
+          setSearchValue(currentSearchValue.trim());
+        }
+      };
+
+      recognizer.recognized = (s, e) => {
+        if (e.result.reason === sdk.ResultReason.RecognizedSpeech) {
+          setTranscription((prevTranscription) => {
+            const newTranscription = prevTranscription + " " + e.result.text;
+            setSearchValue(newTranscription);
+            return newTranscription;
+          });
+        } else if (e.result.reason === sdk.ResultReason.NoMatch) {
+          console.log("NOMATCH: Speech could not be recognized.");
+        }
+      };
+    }
+  };
+
+  const stopListening = () => {
+    if (recognizer) {
+      recognizer.stopContinuousRecognitionAsync(
+        () => {
+          console.log("Continuous recognition stopped");
+          setIsListening(false);
+        },
+        (error) => {
+          console.error("Error stopping continuous recognition:", error);
+        }
+      );
+    }
+  };
 
   const handleDrawerOpen = () => {
     setOpen(true);
@@ -129,7 +375,7 @@ const Jira = () => {
     setOpen(false);
   };
 
-  const drawerWidth = 240;
+  const drawerWidth = 200;
   useEffect(() => {
     socket2.on("response", (data) => {
       if (data.text === "stream ended") {
@@ -212,54 +458,40 @@ const Jira = () => {
 
   //////////////////////////////////////////////////////////////////////////////////////
   const handleInputChange = (event) => {
-    setSearchValue(event.target.value);
+    const newValue = event.target.value;
+    setSearchValue(newValue);
+    setCurrentSearchValue(newValue);
+    setTranscription(newValue); // Update transcription with manual edit
+    setManuallyEdited(true); // Mark as manually edited
   };
-
-  // const getAnswer = async () => {
-  //   const userMessage = { answer: searchValue, sender: "user" };
-  //   const botMessage = { sender: "bot", display: 0 };
-  //   const d = { display: 0 };
-  //   setTimeout(() => {
-  //     setMessages([...messages, userMessage, botMessage]);
-  //     setCoheremsg([...coheremsg, userMessage, botMessage]);
-  //   }, 300);
-  //   if (searchValue) {
-  //     setIsOpen(false);
-  //     try {
-  //       const [response1, response2] = await Promise.all([
-  //         axios.post("http://127.0.0.1:5000/cohere", { text: searchValue }),
-  //         axios.post("http://127.0.0.1:5000/research", { text: searchValue }),
-  //       ]);
-  //       //
-  //       // console.log(response)
-  //       console.log(response1);
-  //       setFinalCohere(response1.data);
-  //       setSearchValue("");
-  //     } catch (error) {
-  //       console.log("Error in llm");
-  //     }
-  //   }
-  // };
 
   const getAnswer = async () => {
     const userMessage = { answer: searchValue, sender: "user" };
     const botMessage = { sender: "bot", display: 0 };
+
     setMessages([...messages, userMessage, botMessage]);
     setCoheremsg([...coheremsg, userMessage, botMessage]);
 
     if (searchValue) {
       setIsOpen(false);
       try {
-        const response = await fetch("http://192.168.0.182:5000/research", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            query: searchValue,
-          }),
-        });
-        // response = response.json();
+        const response = await fetch(
+          // "https://copilot-backend.bluedesert-cfbaeeb3.eastus.azurecontainerapps.io/stream",
+          "http://192.168.1.102:5651/stream",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ query: searchValue }),
+          }
+        );
+
+        // Ensure the response is OK
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         console.log("Response:", response);
 
         const reader = response.body.getReader();
@@ -273,18 +505,21 @@ const Jira = () => {
 
           const chunk = decoder.decode(value);
           streamedAnswer += chunk;
-
+          console.log("Chunk received:", chunk);
+          console.log("Streamed answer so far:", streamedAnswer);
+          setFinalContent(streamedAnswer);
           setAnswers(streamedAnswer);
         }
 
         setFinalContent(streamedAnswer);
         setSearchValue("");
+        setPreviousWords([]);
+        setCurrentSearchValue("");
       } catch (error) {
         console.log("Error in llm", error);
       }
     }
   };
-
   ////////////////////////////////////////////////////////////////////////////////////////
 
   const messagesEndRef = useRef(null);
@@ -298,6 +533,10 @@ const Jira = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, answers]);
+
+  const monitor = () => {
+    navigate("/monitor");
+  };
 
   return (
     <>
@@ -342,7 +581,24 @@ const Jira = () => {
               open={open}
             >
               <div>
-                <DrawerHeader style={{ minHeight: "50px" }}>
+                <DrawerHeader
+                  style={{
+                    minHeight: "60px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <Tooltip title="Create new chat">
+                    {" "}
+                    <OpenInNewIcon
+                      className={styles.newchat}
+                      onClick={() => {
+                        setIsOpen(true);
+                        setMessages([]);
+                      }}
+                    />
+                  </Tooltip>
+                  {/* <img alt="" src={infobellImg} style={{ height: "3rem" }} />  */}
                   <IconButton
                     onClick={() => {
                       setOpen(false, () => {});
@@ -357,26 +613,40 @@ const Jira = () => {
                 </DrawerHeader>
                 <Divider />
                 <List>
+                  {/* <ListItem disablePadding sx={{ marginBottom: "8px" }}>
+                    <ListItemButton
+                      sx={{
+                        "&:hover": {
+                          backgroundColor: "#CDF5FD", // Change background color on hover
+                        },
+                        backgroundColor:
+                          selectedItem === "uploadDoc"
+                            ? "#CDF5FD"
+                            : "transparent",
+                      }}
+                      onClick={() => {
+                        setMonitoring(true);
+                        monitor();
+                      }}
+                    >
+                      <ListItemIcon
+                        style={{ minWidth: "20px", marginRight: "8px" }}
+                      >
+                        <ScreenSearchDesktopIcon
+                          sx={{ fontSize: 20, color: "#00A9FF" }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText primary="Monitoring" />
+                    </ListItemButton>
+                  </ListItem> */}
                   <ListItem disablePadding>
                     <ListItemButton onClick={() => navigate("/Home")}>
-                      <ListItemIcon style={{ minWidth: "20px" }}>
-                        <HubIcon />
-                      </ListItemIcon>
-                      <ListItemText primary="RAG" />
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem disablePadding>
-                    <ListItemButton onClick={() => navigate("/jira")}>
-                      <ListItemIcon style={{ minWidth: "20px" }}>
-                        <HubIcon />
-                      </ListItemIcon>
-                      <ListItemText primary="Copilot" />
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem disablePadding>
-                    <ListItemButton onClick={() => navigate("/Monitor")}>
-                      <ListItemIcon style={{ minWidth: "20px" }}>
-                        <LegendToggleIcon />
+                      <ListItemIcon
+                        style={{ minWidth: "20px", marginRight: "8px" }}
+                      >
+                        <QueryStatsIcon
+                          sx={{ fontSize: 20, color: "#00A9FF" }}
+                        />
                       </ListItemIcon>
                       <ListItemText primary="Monitoring" />
                     </ListItemButton>
@@ -396,12 +666,13 @@ const Jira = () => {
           >
             <img src={infobellImg} style={{ height: "3rem" }} />
 
-            <PopupState variant="popover" popupId="demo-popup-menu">
+            {/* <PopupState variant="popover" popupId="demo-popup-menu">
               {(popupState) => (
                 <React.Fragment>
                   <Button
+                  className={styles.logout}
                     sx={{
-                      backgroundColor: "gray",
+                      backgroundColor: "#00A9FF",
                       color: "white",
                       width: "50px",
                       height: "50px",
@@ -434,7 +705,7 @@ const Jira = () => {
                   </Menu>
                 </React.Fragment>
               )}
-            </PopupState>
+            </PopupState> */}
           </div>
         </div>
 
@@ -450,8 +721,7 @@ const Jira = () => {
           {isOpen ? (
             <div
               style={{
-                width: "40%",
-                height: "100%",
+                width: "70%",
                 display: "flex",
                 flexDirection: "row",
                 justifyContent: "space-around",
@@ -476,14 +746,14 @@ const Jira = () => {
 
               <div
                 style={{
-                  // marginTop: "20%",
-                  width: "90%",
-                  height: "80%",
+                  marginTop: "20%",
+                  height: "50%",
                   display: "flex",
                   flexDirection: "row",
                   flexWrap: "wrap",
                   justifyContent: "space-between",
                   alignItems: "center",
+                  textAlign: "center",
                 }}
               >
                 {randomQueries.map((query, index) => (
@@ -530,10 +800,8 @@ const Jira = () => {
                       flexDirection: "column",
                     }}
                   >
-                    <h4>Which response do you prefer?</h4>
-                    <p style={{ color: "lightgray" }}>
-                      Your choice will make ConvoGene better{" "}
-                    </p>
+                    <h4>Copilot</h4>
+                    <p style={{ color: "lightgray" }}>Your AI Partner </p>
                   </div>
                   {messages?.map((message, index) => (
                     <div
@@ -576,6 +844,7 @@ const Jira = () => {
                               justifyContent: "flex-start",
                               width: "auto",
                               flexDirection: "row",
+                              overflow: "auto",
                               // message?.answer1?.length > 0 ? "row" : "column",
                             }}
                           >
@@ -599,10 +868,11 @@ const Jira = () => {
                                     src={openaiimg}
                                     style={{ width: "50px" }}
                                   />
-                                  {/* <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {/* {" "} */}
                                     {message.answer}
-                                  </ReactMarkdown> */}
-                                  <Markdown>{message.answer}</Markdown>
+                                  </ReactMarkdown>
+                                  {/*<Markdown>{message.answer}</Markdown>*/}
                                   {/* <ParseContent text={message.answer} /> */}
                                   {/* <HtmlToText html={message.answer} /> */}
                                 </div>
@@ -806,22 +1076,22 @@ const Jira = () => {
               alignItems: "center",
             }}
           >
+            <Button
+              style={{ color: isListening ? "red" : "black" }}
+              onClick={isListening ? stopListening : startListening}
+            >
+              <KeyboardVoiceIcon className={styles.sendIcon} />
+            </Button>
             <input
+              ref={queryRef}
               className={styles.searchInput}
               placeholder="Enter the prompt"
-              value={searchValue}
+              value={searchValue || currentSearchValue}
               onChange={handleInputChange}
             />
-            <div style={{ marginRight: 10 }}>
-              <Button style={{ color: "black" }} onClick={() => getAnswer()}>
-                {/* <IconsHolder
-                  style={{ opacity: 0.3, backgroundColor:"black", color:"black" }}
-                  className={styles.iconLarge}
-                  type="SendIcon"
-                /> */}
-                <SendIcon className={styles.sendIcon} />
-              </Button>
-            </div>
+            <Button style={{ color: "black" }} onClick={() => getAnswer()}>
+              <SendIcon className={styles.sendIcon} />
+            </Button>
           </div>
         </div>
       </div>
